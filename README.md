@@ -36,3 +36,19 @@ This project walks through why that matters and how to fix it.
 Python, pandas, scikit-learn, XGBoost, imbalanced-learn, SHAP, Streamlit
 
 ## Project Structure
+├── data/ # Dataset (not committed — see below)
+│ └── sample_transactions.csv
+├── notebooks/
+│ ├── 01_eda.ipynb # Class imbalance, amount/time patterns, correlations
+│ ├── 02_baseline.ipynb # Naive models, the accuracy trap
+│ ├── 03_imbalance_handling.ipynb # Class weighting vs SMOTE vs undersampling
+│ ├── 04_evaluation.ipynb # Precision-recall curves, threshold selection
+│ └── 05_finalize_model.ipynb # Final model training + SHAP explainability
+├── src/
+│ └── predict.py # Reusable model loading and prediction function
+├── models/
+│ └── model.pkl # Final trained XGBoost model (class-weighted)
+├── app/
+│ └── app.py # Streamlit dashboard
+├── assets/ # Saved plots used in this README
+└── requirements.txt
