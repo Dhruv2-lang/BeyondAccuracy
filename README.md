@@ -39,7 +39,7 @@ On imbalanced datasets, ROC-AUC can look excellent even when a model is performi
 Python · pandas · scikit-learn · XGBoost · imbalanced-learn · SHAP · Streamlit
 ## Project Structure
 
-```text
+text
 ├── data/                       # Dataset (not committed — see below)
 │   └── sample_transactions.csv
 ├── notebooks/
@@ -55,7 +55,11 @@ Python · pandas · scikit-learn · XGBoost · imbalanced-learn · SHAP · Strea
 ├── app/
 │   └── app.py                  # Streamlit dashboard
 ├── assets/                     # Saved plots used in this README
-└── requirements.txt 
+└── requirements.txt
+
+ 
+
+
 
 ## Running Locally
 
