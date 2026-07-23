@@ -37,9 +37,33 @@ On imbalanced datasets, ROC-AUC can look excellent even when a model is performi
 ## Tech Stack
 
 Python · pandas · scikit-learn · XGBoost · imbalanced-learn · SHAP · Streamlit
-## Project Structure
 
-text
+
+## Limitations & Future Work
+
+Most features (V1–V28) are PCA-anonymized for privacy, which limits interpretability of what each feature actually represents in a business sense
+
+The dataset covers a fixed two-day window of 2013 European card transactions — a production system would need continuous retraining as fraud patterns evolve over time
+
+The classification threshold used here was chosen to illustrate a recall-driven tradeoff; a real deployment would tune this against the actual business cost of false positives versus missed fraud
+
+No hyperparameter tuning was performed on the final model — results reflect default XGBoost parameters with class weighting applied
+
+
+## Running Locally
+
+```bash
+git clone [https://github.com/Dhruv2-lang/BeyondAccuracy.git](https://github.com/Dhruv2-lang/BeyondAccuracy.git)
+cd BeyondAccuracy
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+streamlit run app/app.py 
+
+
+
+## Project Structure
+```text
 ├── data/                       # Dataset (not committed — see below)
 │   └── sample_transactions.csv
 ├── notebooks/
@@ -57,18 +81,5 @@ text
 ├── assets/                     # Saved plots used in this README
 └── requirements.txt
 
- 
-
-
-
-## Running Locally
-
-```bash
-git clone [https://github.com/Dhruv2-lang/BeyondAccuracy.git](https://github.com/Dhruv2-lang/BeyondAccuracy.git)
-cd BeyondAccuracy
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-streamlit run app/app.py 
 
 
