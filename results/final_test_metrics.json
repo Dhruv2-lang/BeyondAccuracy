@@ -1,0 +1,20 @@
+{
+  "average_precision": 0.8386888425507517,
+  "roc_auc": 0.9663847865873751,
+  "precision": 0.8472222222222222,
+  "recall": 0.8243243243243243,
+  "f1": 0.8356164383561644,
+  "threshold": 0.4179530143737793,
+  "confusion_matrix": {
+    "tn": 42637,
+    "fp": 11,
+    "fn": 13,
+    "tp": 61
+  },
+  "test_rows": 42722,
+  "test_fraud_cases": 74,
+  "validation_precision_target": 0.8,
+  "threshold_selection_rule": "Highest validation recall with precision >= 0.80",
+  "random_state": 42,
+  "scale_pos_weight": 578.546511627907
+}
