@@ -1,78 +1,246 @@
-import streamlit as st
-import pandas as pd
-import joblib
 
-st.set_page_config(page_title="Beyond Accuracy — Fraud Detection", layout="wide")
+"""Streamlit dashboard for BeyondAccuracy fraud detection."""
+
+from pathlib import Path
+import sys
+
+import pandas as pd
+import streamlit as st
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from src.predict import load_artifacts, predict_fraud
+
+
+st.set_page_config(
+    page_title="BeyondAccuracy | Fraud Detection",
+    page_icon="💳",
+    layout="wide",
+)
+
+FEATURES = [
+    "Time",
+    *[f"V{i}" for i in range(1, 29)],
+    "Amount",
+]
+
 
 @st.cache_resource
-def load_model():
-    return joblib.load("models/model.pkl")
+def get_artifacts():
+    return load_artifacts()
+
 
 @st.cache_data
 def load_sample_data():
-    return pd.read_csv("data/sample_transactions.csv")
+    """Load a local sample file or sample rows from the local dataset."""
+    sample_path = ROOT / "data" / "sample_transactions.csv"
+    dataset_path = ROOT / "data" / "creditcard.csv"
 
-model = load_model()
+    if sample_path.exists():
+        return pd.read_csv(sample_path)
 
-st.title("💳 Beyond Accuracy: Credit Card Fraud Detection")
+    if dataset_path.exists():
+        df = pd.read_csv(dataset_path)
+        if "Class" in df.columns:
+            df = df.drop(columns=["Class"])
+        return df.sample(
+            n=min(50, len(df)),
+            random_state=42,
+        ).reset_index(drop=True)
+
+    return None
+
+
+try:
+    model, metadata = get_artifacts()
+except Exception as exc:
+    st.error(f"Could not load the trained model: {exc}")
+    st.info("From the project root, run: python src/train.py")
+    st.stop()
+
+
+default_threshold = float(metadata["threshold"])
+feature_names = metadata["feature_names"]
+
+st.title("💳 BeyondAccuracy")
+st.subheader("Credit Card Fraud Detection")
 st.markdown(
-    "A fraud detection model built to handle severe class imbalance properly — "
-    "because on this dataset, **99.9% accuracy still misses real fraud**."
+    "An imbalanced-classification project focused on identifying "
+    "potentially fraudulent transactions without relying on accuracy alone."
 )
 
-tab1, tab2 = st.tabs(["📁 Upload Transactions", "🎚️ Threshold Explorer"])
+st.caption(
+    f"Model: XGBoost | Decision threshold: {default_threshold:.4f} "
+    f"| Expected features: {len(feature_names)}"
+)
 
-with tab1:
-    st.subheader("Upload a CSV of transactions")
-    st.caption("File must have the same columns as the training data (Time, V1-V28, Amount) — no 'Class' column needed.")
+upload_tab, explorer_tab = st.tabs(
+    ["📁 Transaction Predictions", "🎚️ Threshold Explorer"]
+)
 
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-    with col2:
-        st.write("")
-        st.write("")
-        use_sample = st.button("Try with sample data")
-
-    threshold = st.slider("Fraud probability threshold", 0.0, 1.0, 0.5, 0.01, key="upload_threshold")
-
-    data = None
-    if use_sample:
-        data = load_sample_data()
-        st.info("Using built-in sample data (50 random transactions).")
-    elif uploaded_file is not None:
-        data = pd.read_csv(uploaded_file)
-        if 'Class' in data.columns:
-            data = data.drop('Class', axis=1)
-            st.warning("Detected and removed a 'Class' column from the upload.")
-
-    if data is not None:
-        probs = model.predict_proba(data)[:, 1]
-        data['fraud_probability'] = probs
-        data['flagged_as_fraud'] = (probs >= threshold).astype(int)
-
-        n_flagged = data['flagged_as_fraud'].sum()
-        st.success(f"Found {n_flagged} transaction(s) flagged as fraud out of {len(data)} total.")
-
-        st.dataframe(
-            data.sort_values('fraud_probability', ascending=False),
-            use_container_width=True
-        )
-
-        csv_download = data.to_csv(index=False).encode('utf-8')
-        st.download_button("Download results as CSV", csv_download, "fraud_results.csv", "text/csv")
-    else:
-        st.info("Upload a CSV or click 'Try with sample data' to see predictions here.")
-
-with tab2:
-    st.subheader("Understand the precision-recall tradeoff")
-    st.markdown(
-        "Fraud detection isn't just about accuracy. Moving the threshold trades off "
-        "**catching more fraud (recall)** against **fewer false alarms (precision)**."
+with upload_tab:
+    st.subheader("Upload transactions")
+    st.write(
+        "Upload a CSV containing the 30 model input features: "
+        "Time, V1–V28, and Amount. A Class column, if present, is removed."
     )
 
-    st.image("assets/threshold_tradeoff.png", caption="Precision & Recall vs Decision Threshold", use_container_width=True)
-    st.image("assets/precision_recall_curve.png", caption="Precision-Recall Curve", use_container_width=True)
+    uploaded_file = st.file_uploader(
+        "Choose a transaction CSV",
+        type=["csv"],
+        key="transaction_upload",
+    )
 
-st.markdown("---")
-st.caption("Built as part of a fraud detection project focused on proper handling of severe class imbalance. See the [GitHub repo](https://github.com/Dhruv2-lang/BeyondAccuracy) for full methodology.")
+    sample_col, threshold_col = st.columns([1, 2])
+
+    with sample_col:
+        use_sample = st.button(
+            "Try sample transactions",
+            use_container_width=True,
+        )
+
+    with threshold_col:
+        threshold = st.slider(
+            "Fraud probability threshold",
+            min_value=0.0,
+            max_value=1.0,
+            value=default_threshold,
+            step=0.01,
+            help=(
+                "Lower thresholds flag more transactions and may increase "
+                "false alarms. Higher thresholds flag fewer transactions."
+            ),
+        )
+
+    data = None
+
+    if uploaded_file is not None:
+        try:
+            data = pd.read_csv(uploaded_file)
+        except Exception as exc:
+            st.error(f"Could not read the uploaded CSV: {exc}")
+
+    elif use_sample:
+        try:
+            data = load_sample_data()
+            if data is None:
+                st.warning(
+                    "No local sample data was found. Upload a CSV to continue."
+                )
+            else:
+                st.info(
+                    "Using local sample rows. These demonstrate the app "
+                    "and are not new or live transactions."
+                )
+        except Exception as exc:
+            st.error(f"Could not load sample data: {exc}")
+
+    if data is not None:
+        if data.empty:
+            st.error("The CSV contains no transactions.")
+        else:
+            if "Class" in data.columns:
+                data = data.drop(columns=["Class"])
+                st.warning(
+                    "Removed the Class column. This dashboard produces "
+                    "predictions; it does not evaluate ground-truth labels."
+                )
+
+            # Use the shared validation and prediction function.
+            try:
+                results = predict_fraud(model, data, metadata)
+
+                # Recalculate labels with the current dashboard slider.
+                results["is_fraud"] = (
+                    results["fraud_probability"] >= threshold
+                ).astype(int)
+
+                flagged = int(results["is_fraud"].sum())
+                total = len(results)
+                unflagged = total - flagged
+
+                metric1, metric2, metric3 = st.columns(3)
+                metric1.metric("Transactions", f"{total:,}")
+                metric2.metric("Flagged for review", f"{flagged:,}")
+                metric3.metric("Not flagged", f"{unflagged:,}")
+
+                st.caption(
+                    "A flagged transaction is a model prediction, not proof "
+                    "of fraud. Review flagged transactions before taking action."
+                )
+
+                st.subheader("Prediction results")
+                st.dataframe(
+                    results.sort_values(
+                        "fraud_probability",
+                        ascending=False,
+                    ),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+
+                csv_bytes = results.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    "Download predictions as CSV",
+                    data=csv_bytes,
+                    file_name="fraud_predictions.csv",
+                    mime="text/csv",
+                )
+
+            except (ValueError, TypeError) as exc:
+                st.error(f"Input validation failed: {exc}")
+            except Exception as exc:
+                st.error(f"Could not generate predictions: {exc}")
+
+    else:
+        st.info(
+            "Upload a CSV or click 'Try sample transactions' to see predictions."
+        )
+
+
+with explorer_tab:
+    st.subheader("Understanding the precision–recall trade-off")
+    st.write(
+        "The decision threshold changes how many transactions are flagged. "
+        "Lower thresholds may catch more fraud but can also increase false alarms."
+    )
+
+    st.metric(
+        "Training-selected threshold",
+        f"{default_threshold:.4f}",
+    )
+
+    st.markdown("**Precision–recall curve**")
+    pr_path = ROOT / "assets" / "precision_recall_curve.png"
+    if pr_path.exists():
+        st.image(
+            str(pr_path),
+            caption="Precision–recall curve from the saved project analysis",
+            use_container_width=True,
+        )
+    else:
+        st.info("Precision–recall plot not found in assets/.")
+
+    st.markdown("**Threshold trade-off**")
+    threshold_path = ROOT / "assets" / "threshold_tradeoff.png"
+    if threshold_path.exists():
+        st.image(
+            str(threshold_path),
+            caption="Precision and recall at different thresholds",
+            use_container_width=True,
+        )
+    else:
+        st.info("Threshold trade-off plot not found in assets.")
+
+st.divider()
+st.caption(
+    "BeyondAccuracy | Educational fraud-detection project. "
+    "Model predictions should not be treated as definitive fraud decisions."
+)
+
+st.markdown(
+    "[View the project on GitHub]"
+    "(https://github.com/Dhruv2-lang/BeyondAccuracy)"
+)
+
