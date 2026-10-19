@@ -1,5 +1,11 @@
 {
-  "threshold": 0.4179530143737793,
+  "schema_version": 2,
+  "model_file": "model.pkl",
+  "model_type": "XGBClassifier",
+  "selected_experiment": "xgb_unweighted",
+  "selection_criterion": "highest validation average precision",
+  "threshold": 0.0861576497554779,
+  "threshold_selection_rule": "Highest validation recall with precision >= 0.80",
   "feature_names": [
     "Time",
     "V1",
@@ -33,7 +39,20 @@
     "Amount"
   ],
   "target_column": "Class",
-  "model_type": "XGBClassifier",
-  "threshold_selection_rule": "Highest validation recall with precision >= 0.80",
-  "random_state": 42
+  "random_state": 42,
+  "split": {
+    "train": 0.7,
+    "validation": 0.15,
+    "test": 0.15,
+    "stratified": true
+  },
+  "dataset_sha256": "76274b691b16a6c49d3f159c883398e03ccd6d1ee12d9d8ee38f4b4b98551a89",
+  "dataset_rows": 284807,
+  "library_versions": {
+    "python": "3.13.1",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.4"
+  }
 }
