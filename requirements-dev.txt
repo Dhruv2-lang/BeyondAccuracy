@@ -1,0 +1,9 @@
+# Development / notebook / test dependencies (includes the runtime set).
+-r requirements.txt
+pytest>=8
+seaborn>=0.13       # notebooks 01-02
+shap>=0.45          # notebook 05
+nbformat>=5.9
+nbclient>=0.10
+ipykernel>=6.29
+# For interactive notebook editing also install:  pip install jupyterlab

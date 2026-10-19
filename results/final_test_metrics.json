@@ -1,15 +1,17 @@
 {
-  "average_precision": 0.8386888425507517,
-  "roc_auc": 0.9663847865873751,
-  "precision": 0.8472222222222222,
-  "recall": 0.8243243243243243,
-  "f1": 0.8356164383561644,
-  "threshold": 0.4179530143737793,
+  "selected_experiment": "xgb_unweighted",
+  "average_precision": 0.836653360096827,
+  "roc_auc": 0.9685248698332547,
+  "precision": 0.8428571428571429,
+  "recall": 0.7972972972972973,
+  "f1": 0.8194444444444444,
+  "accuracy": 0.9993914142596321,
+  "threshold": 0.0861576497554779,
   "confusion_matrix": {
     "tn": 42637,
     "fp": 11,
-    "fn": 13,
-    "tp": 61
+    "fn": 15,
+    "tp": 59
   },
   "test_rows": 42722,
   "test_fraud_cases": 74,
